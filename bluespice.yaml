@@ -1,0 +1,16 @@
+---
+- hosts: bluespice
+  remote_user: root
+  tasks:
+  - name: Sicherstellen das libselinux-python installiert ist
+    yum: name=libselinux-python state=latest
+  - name: aktuelle Version von Apache installieren (falls noch nicht vorhanden)
+    yum: name=httpd state=latest
+  - name: Apache-Konfiguration schreiben
+    template: src=/root/httpd.j2 dest=/etc/httpd/conf.d/bluespice.conf
+      notify:
+      - restart apache
+  handlers:
+    - name restart apache
+      service: name=httpd state=restarted
+
