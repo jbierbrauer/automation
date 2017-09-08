@@ -7,10 +7,57 @@
   - name: aktuelle Version von Apache installieren (falls noch nicht vorhanden)
     yum: name=httpd state=latest
   - name: Apache-Konfiguration schreiben
-    template: src=/root/httpd.j2 dest=/etc/httpd/conf.d/bluespice.conf
-      notify:
-      - restart apache
+    template: src=/root/index.html.j2 dest=/usr/share/httpd/noindex/index.html
+    notify:
+      - apache neustarten
+  - name: Firewalld installieren
+    yum: name=firewalld state=latest
+  - name: Firewall ausschalten
+    service: name=firewalld state=stopped
+  - name: PHP-7 Repo installieren
+    yum:
+      name: http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+      state: present
+  #- name: PHP-Module installieren
+  #  yum: name=php-curl,php-gd,php-tidy,yum-utils state=latest
+  - name: php72 Repo aktivieren
+    command: yum-config-manager --enable remi-php72
+  - name: PHP-7.1 Module installieren
+    yum: name=php71,php71-php,php71-php-gd,php71-php-xml,php71-php-curl,php7-php-tidy,php7-php-mbstring,php71-php-intl,php71-php-pdo,php71-php-pecl-mysql state=latest
+  - name: Mariadb installieren
+    yum: name=mariadb-server state=latest
+  - name: MariaDB starten
+    service: name=mariadb state=started
+  #- name: Passwort für root-Benutzer von mariadb setzen
+  #  command: mysqladmin -uroot password Seminar2017
+  #- name: Bluespice mit Mediawiki herunterladen
+  #  get_url: url=https://sourceforge.net/projects/bluespice/files/BlueSpice-free-2.27.2-installer.zip/download dest=/root
+  #- name: Bluespice entpacken
+  #  unarchive: src=/root/BlueSpice-free-2.27.2-installer.zip dest=/root remote_src=True
+  #- name: Webinhalte von /var/www/html löschen
+  #  command: rm -rf /var/www/html
+  #- name: Webinhalte nach /var/www/html verschieben
+  #  command: mv /root/bluespice-free-installer /var/www/html
+  - name: Besitzer für Verzeichnis auf apache stellen
+    command: chown -R apache:apache /var/www/html
+  - name: Lese und Schreibrechte für Verzeichnisse setzen
+    file:
+      path: /var/www/html
+      mode: u=rwX,g=rwX,o=rX
+      owner: apache
+      group: apache
+      recurse: yes
+  - name: Data umbenennen
+    command: mv /var/www/html/extensions/BlueSpiceFoundation/data.template /var/www/html/extensions/BlueSpiceFoundation/data
+  - name: Config umbenennen
+    command: mv /var/www/html/extensions/BlueSpiceFoundation/config.template /var/www/html/extensions/BlueSpiceFoundation/config
+  - name: LocalSettings schreiben
+    template: src=/etc/ansible/LocalSettings.php.j2 dest=/var/www/html/LocalSettings.php
+    notify:
+      - apache neustarten
+  - name: PHP Updateskript ausführen
+    command: php /var/www/html/maintenance/update.php
   handlers:
-    - name restart apache
-      service: name=httpd state=restarted
+     - name: apache neustarten
+       service: name=httpd state=restarted
 
