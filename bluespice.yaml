@@ -4,8 +4,10 @@
   tasks:
   - name: Sicherstellen das libselinux-python installiert ist
     yum: name=libselinux-python state=latest
-  - name: aktuelle Version von Apache installieren (falls noch nicht vorhanden)
-    yum: name=httpd state=latest
+  - name: lokalen Hostseintrag machen
+    lineinfile: path='/etc/hosts' state=present line='{{ ansible_default_ipv4.address }} {{ ansible_nodename }}' 
+  - name: aktuelle Version von Apache installieren (falls noch nicht vorhanden)     
+    yum: name=httpd state=latest 
  # - name: Apache-Konfiguration schreiben
  #   template: src=/root/index.html.j2 dest=/usr/share/httpd/noindex/index.html
  #   notify:
@@ -59,6 +61,14 @@
     template: src=/etc/ansible/LocalSettings.php.j2 dest=/var/www/html/LocalSettings.php
     notify:
       - apache neustarten
+  - name: Paket installieren 
+    yum: state=latest name=MySQL-python 
+  - lineinfile: 
+      path: /etc/hosts 
+      state: present 
+      line: '{{ ansible_default_ipv4.address }} {{ ansible_nodename }}' 
+  - name: MySQL Dump einlesen
+    mysql_db: state=import login_user=root login_password=Seminar2017 name="my_wiki" target=/var/www/html/maintenance/tables.sql
   - name: Install.php aufrufen
     command: php /var/www/html/maintenance/install.php --conf /var/www/html/LocalSettings.php --scriptpath "" --pass Seminar2017 SCNWiki administrator
     failed_when: result.rc not in [0,1]
