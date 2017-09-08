@@ -28,7 +28,7 @@ $wgSitename = "SCNWiki";
 $wgScriptPath = "";
 
 ## The protocol and server name to use in fully-qualified URLs
-$wgServer = "http://{{ ansible_fqdn }}";
+$wgServer = "http://{{ ansible_nodename }}";
 
 ## The URL path to static resources (images, scripts, etc.)
 $wgResourceBasePath = $wgScriptPath;
