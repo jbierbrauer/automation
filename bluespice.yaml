@@ -6,14 +6,16 @@
     yum: name=libselinux-python state=latest
   - name: aktuelle Version von Apache installieren (falls noch nicht vorhanden)
     yum: name=httpd state=latest
-  - name: Apache-Konfiguration schreiben
-    template: src=/root/index.html.j2 dest=/usr/share/httpd/noindex/index.html
-    notify:
-      - apache neustarten
+ # - name: Apache-Konfiguration schreiben
+ #   template: src=/root/index.html.j2 dest=/usr/share/httpd/noindex/index.html
+ #   notify:
+ #     - apache neustarten
   - name: Firewalld installieren
     yum: name=firewalld state=latest
   - name: Firewall ausschalten
     service: name=firewalld state=stopped
+  - name: yum-utils installieren
+    yum: name=yum-utils state=latest
   - name: PHP-7 Repo installieren
     yum:
       name: http://rpms.remirepo.net/enterprise/remi-release-7.rpm
@@ -21,23 +23,23 @@
   #- name: PHP-Module installieren
   #  yum: name=php-curl,php-gd,php-tidy,yum-utils state=latest
   - name: php72 Repo aktivieren
-    command: yum-config-manager --enable remi-php72
+    command: yum-config-manager --enable remi-php71
   - name: PHP-7.1 Module installieren
-    yum: name=php71,php71-php,php71-php-gd,php71-php-xml,php71-php-curl,php7-php-tidy,php7-php-mbstring,php71-php-intl,php71-php-pdo,php71-php-pecl-mysql state=latest
+    yum: name=php71,php71-php,php71-php-gd,php71-php-xml,php71-php-curl,php71-php-tidy,php71-php-mbstring,php71-php-intl,php71-php-pdo,php71-php-pecl-mysql,php,php-mbstring,php-xml state=latest
   - name: Mariadb installieren
     yum: name=mariadb-server state=latest
   - name: MariaDB starten
     service: name=mariadb state=started
-  #- name: Passwort für root-Benutzer von mariadb setzen
-  #  command: mysqladmin -uroot password Seminar2017
-  #- name: Bluespice mit Mediawiki herunterladen
-  #  get_url: url=https://sourceforge.net/projects/bluespice/files/BlueSpice-free-2.27.2-installer.zip/download dest=/root
-  #- name: Bluespice entpacken
-  #  unarchive: src=/root/BlueSpice-free-2.27.2-installer.zip dest=/root remote_src=True
-  #- name: Webinhalte von /var/www/html löschen
-  #  command: rm -rf /var/www/html
-  #- name: Webinhalte nach /var/www/html verschieben
-  #  command: mv /root/bluespice-free-installer /var/www/html
+  - name: Passwort für root-Benutzer von mariadb setzen
+    command: mysqladmin -uroot password Seminar2017
+  - name: Bluespice mit Mediawiki herunterladen
+    get_url: url=https://sourceforge.net/projects/bluespice/files/BlueSpice-free-2.27.2-installer.zip/download dest=/root
+  - name: Bluespice entpacken
+    unarchive: src=/root/BlueSpice-free-2.27.2-installer.zip dest=/root remote_src=True
+  - name: Webinhalte von /var/www/html löschen
+    command: rm -rf /var/www/html
+  - name: Webinhalte nach /var/www/html verschieben
+    command: mv /root/bluespice-free-installer /var/www/html
   - name: Besitzer für Verzeichnis auf apache stellen
     command: chown -R apache:apache /var/www/html
   - name: Lese und Schreibrechte für Verzeichnisse setzen
@@ -57,6 +59,8 @@
       - apache neustarten
   - name: PHP Updateskript ausführen
     command: php /var/www/html/maintenance/update.php
+    failed_when: result.rc not in [0,1]
+    register: result
   handlers:
      - name: apache neustarten
        service: name=httpd state=restarted
