@@ -25,13 +25,15 @@
   - name: php72 Repo aktivieren
     command: yum-config-manager --enable remi-php71
   - name: PHP-7.1 Module installieren
-    yum: name=php71,php71-php,php71-php-gd,php71-php-xml,php71-php-curl,php71-php-tidy,php71-php-mbstring,php71-php-intl,php71-php-pdo,php71-php-pecl-mysql,php,php-mbstring,php-xml state=latest
+    yum: name=php71,php71-php,php71-php-gd,php71-php-xml,php71-php-curl,php71-php-tidy,php71-php-mbstring,php71-php-intl,php71-php-pdo,php71-php-pecl-mysql,php,php-mbstring,php-xml,php-mysql,php-gd,php-intl state=latest
   - name: Mariadb installieren
     yum: name=mariadb-server state=latest
   - name: MariaDB starten
     service: name=mariadb state=started
   - name: Passwort für root-Benutzer von mariadb setzen
     command: mysqladmin -uroot password Seminar2017
+  - name: Datenbank "my_wiki" erstellen
+    command: mysqladmin -u root -pSeminar2017 create my_wiki
   - name: Bluespice mit Mediawiki herunterladen
     get_url: url=https://sourceforge.net/projects/bluespice/files/BlueSpice-free-2.27.2-installer.zip/download dest=/root
   - name: Bluespice entpacken
@@ -57,10 +59,20 @@
     template: src=/etc/ansible/LocalSettings.php.j2 dest=/var/www/html/LocalSettings.php
     notify:
       - apache neustarten
+  - name: Install.php aufrufen
+    command: php /var/www/html/maintenance/install.php --conf /var/www/html/LocalSettings.php --scriptpath "" --pass Seminar2017 SCNWiki administrator
+    failed_when: result.rc not in [0,1]
+    register: result
+  - name: Einlesen der Datenbanktabellen
+    command: mysql my_wiki -uroot -pSeminar2017 </var/www/html/maintenance/tables.sql
   - name: PHP Updateskript ausführen
     command: php /var/www/html/maintenance/update.php
     failed_when: result.rc not in [0,1]
     register: result
+  - name: Benutzer Admin mit Passwort Seminar2017 als System Operator erstellen
+    command: php /var/www/html/maintenance/createAndPromote.php --sysop admin Seminar2017
+    notify:
+      - apache neustarten
   handlers:
      - name: apache neustarten
        service: name=httpd state=restarted
