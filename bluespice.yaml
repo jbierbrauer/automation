@@ -73,8 +73,6 @@
     command: php /var/www/html/maintenance/install.php --conf /var/www/html/LocalSettings.php --scriptpath "" --pass Seminar2017 SCNWiki administrator
     failed_when: result.rc not in [0,1]
     register: result
-  - name: Einlesen der Datenbanktabellen
-    command: mysql my_wiki -uroot -pSeminar2017 </var/www/html/maintenance/tables.sql
   - name: PHP Updateskript ausführen
     command: php /var/www/html/maintenance/update.php
     failed_when: result.rc not in [0,1]
