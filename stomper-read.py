@@ -1,23 +1,28 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import time
 #from javax.jms import Session
 #from org.apache.activemq import ActiveMQConnectionFactory
 import stomp
-
+from stomp.listener import TestListener
 
 
 
 def readoutloud():
-	conn = stomp.Connection10()
-	listener = stomp.TestListener()
+	conn = stomp.Connection12()
+	listener = TestListener()
 	conn.set_listener('', listener)
+#	conn.set_listener('message', ConnectionListener(conn))
+#	conn.set_listener('print', PrintingListener())
+#	conn.set_listener('stats', StatsListener())
 	conn.start()
+	conn.connect()
 #	conn.connect(username, password, wait=True)
-	conn.subscribe(destination=queue_name, id=1, ack='auto')
+	conn.subscribe(destination='mytestqueue', id=1, ack='auto')
+	listener.wait_for_message()
 	listener.message_list #This can read all the messages from the queue
 	headers, message = listener.get_latest_message() #This can read the last message from the queue
 	print(message)
-	conn.unsubscribe(queue_name)
+	conn.unsubscribe('mytestqueue')
 	conn.disconnect()   
 #	conn.close()
 
