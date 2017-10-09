@@ -61,28 +61,26 @@ defaults:
 
   # Config files inside the MQ container are located in /opt/activemq/conf
   # running with '-v /mymqconf/path:/opt/activemq/conf' can make your config available inside the container
-  #
+  
 
-services: {}
+services: 
   # Add your containers here, specifying the base image you want to build from.
   # To use this example, uncomment it and delete the curly braces after services key.
   # You may need to run `docker pull ubuntu:trusty` for this to work.
 
     frontend:
       from: "centos:7"
+      roles:
+        - python3
       ports:
         - "2200:22"
       command: ["/root/myscript.py"]
       def_overrides:
         environment:
           - "DEBUG=1"
-      roles:
-        - python3
-      
-      # messaging wird ein Container auf Basis des webcenter/activemq images
-      # ActiveMQ 5.14.3 with OpenJDK-jre-8-headless on Ubuntu 15.10 
+ 
     messaging:
-            from: "webcenter/activemq:latest"      
+      from: "webcenter/activemq:latest"      
       ports:
         - "61616:61616"
         - "8161:8161"
