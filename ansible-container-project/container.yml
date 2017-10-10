@@ -57,8 +57,8 @@ defaults:
   ACTIVEMQ_STATIC_TOPICS: mytesttopic
   QUEUE_PORT: 61616
   ACTIVEMQ_HOSTNAME: amq.test.local
-  ACTIVEMQ_CONF: /root/ansible-container/project/etc/activemq/conf
-
+  ACTIVEMQ_CONF: /root/ansible-container-project/etc/activemq/conf
+  CENTOS_REPOS: /root/ansible-container-project/etc/yum.repos.d
   # Config files inside the MQ container are located in /opt/activemq/conf
   # running with '-v /mymqconf/path:/opt/activemq/conf' can make your config available inside the container
   
