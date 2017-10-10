@@ -9,7 +9,7 @@ settings:
     # roles_path:   # Specify a local path containing Ansible roles
     # volumes:      # Provide a list of volumes to mount
     # environment:  # List or mapping of environment variables
-    save: yes
+    # save: yes
     roles_path:
       - /etc/ansible/roles
   # Set the name of the project. Defaults to basename of the project directory.
@@ -75,6 +75,8 @@ services:
       ports:
         - "2200:22"
       command: ["/root/myscript.py"]
+      volumes:
+        - '{{ CENTOS_REPOS }}:/etc/yum.repos.d'
       def_overrides:
         environment:
           - "DEBUG=1"
