@@ -20,8 +20,26 @@ def readoutloud():
 	conn.subscribe(destination='mytestqueue', id=1, ack='auto')
 	listener.wait_for_message()
 	listener.message_list #This can read all the messages from the queue
-	headers, message = listener.get_latest_message() #This can read the last message from the queue
-	print(message)
+#	print(listener.message_list)
+	print('Anzahl Elemente:'+str(len(listener.message_list)))
+	print('Betrete For-Schleife')
+	elementanzahl=len(listener.message_list)
+	for i in range(elementanzahl):
+	   aktuellenachricht=listener.message_list[i]
+	   print(aktuellenachricht)
+	   print('Zeitstempel:'+aktuellenachricht[0]['timestamp']+' Nachricht:'+aktuellenachricht[1])
+
+
+#	i=0
+#	while True:
+#	   try:
+#	      headers, message = listener.get_latest_message() #This can read the last message from the queue
+#	      print(message)
+#	      time.sleep(1)
+#	   except:
+#	      print('Fehler bei get_latest_message()')
+#	      break
+
 	conn.unsubscribe('mytestqueue')
 	conn.disconnect()   
 #	conn.close()
@@ -37,7 +55,7 @@ class App():
         while True:
             print("warte auf Nachricht...")
             readoutloud()
-            time.sleep(5)
+            time.sleep(2)
 
 app = App()
 app.run()

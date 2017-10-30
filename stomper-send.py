@@ -62,7 +62,7 @@ class App():
         while durchlauf>0:
             print("Ich lebe!")
             send2queue(targethost=zielhost,targetqueue=zielqueue)
-            time.sleep(5)
+            time.sleep(2)
             durchlauf=durchlauf-1
 	print('Game Over')
         exit()       
