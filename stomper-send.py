@@ -3,6 +3,7 @@ import time
 import stomp
 import sys
 import socket
+import random
 
 # stomp.Connection10() besagt, dass eine Verbindung mit Stomp Protokollversion 1.0 auf Localhost aufgebaut werden soll
 # stomp.Connection12() steht somit fuer Version 1.2 des Protokolls. 
@@ -12,11 +13,14 @@ def send2queue( targethost='localhost', targetqueue='mytestqueue'  ):
 # gethostbyname funktioniert nur mit fqdn-notation. ein einfacher hostnam zu fehlern
         targetip=str(socket.gethostbyname(targethost))
         print('ziel:' + targetip)
+        nachricht=str(random.random())
         conn=stomp.Connection10([(targetip,61613)])
 #        conn=stomp.Connection12([('127.0.0.1',61613)])
 	conn.start()
 	conn.connect()
-	conn.send(str(targetqueue),'Hello World... ehrm Queue')
+#	conn.send(str(targetqueue),'Hello World... ehrm Queue')
+	conn.send(str(targetqueue),nachricht)
+        print ('Nachricht gesendet:'+nachricht)
 	conn.disconnect()
 	return
 

@@ -35,7 +35,7 @@ class App():
         self.pidfile_timeout = 5
     def run(self):
         while True:
-            print("Ich lebe!")
+            print("warte auf Nachricht...")
             readoutloud()
             time.sleep(5)
 
