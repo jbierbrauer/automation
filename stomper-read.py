@@ -1,14 +1,21 @@
 #!/usr/bin/python3
 import time
+import datetime
 #from javax.jms import Session
 #from org.apache.activemq import ActiveMQConnectionFactory
 import stomp
 from stomp.listener import TestListener
 
-
-
+def timestamp2date(timestamp_in_ms):
+	# in Python3 wird // anstatt / fuer die Division benoetigt
+	timestamp_in_s=int(timestamp_in_ms)//1000.0
+	datum=datetime.datetime.fromtimestamp(timestamp_in_s)
+	if debug_on==True: print(datum)
+	return datum
+ 
 def readoutloud():
-	conn = stomp.Connection12()
+#	conn = stomp.Connection12()
+	conn = stomp.Connection12([('127.0.0.1',61613)])
 	listener = TestListener()
 	conn.set_listener('', listener)
 #	conn.set_listener('message', ConnectionListener(conn))
@@ -18,7 +25,8 @@ def readoutloud():
 	conn.connect()
 #	conn.connect(username, password, wait=True)
 	conn.subscribe(destination='mytestqueue', id=1, ack='auto')
-	listener.wait_for_message()
+# Es muss nur auf neue Nachrichten gewartet werden, wenn noch keine Nachrichten in der Queue sind	
+	if len(listener.message_list)==0: listener.wait_for_message()
 	listener.message_list #This can read all the messages from the queue
 #	print(listener.message_list)
 	print('Anzahl Elemente:'+str(len(listener.message_list)))
@@ -26,8 +34,10 @@ def readoutloud():
 	elementanzahl=len(listener.message_list)
 	for i in range(elementanzahl):
 	   aktuellenachricht=listener.message_list[i]
-	   print(aktuellenachricht)
-	   print('Zeitstempel:'+aktuellenachricht[0]['timestamp']+' Nachricht:'+aktuellenachricht[1])
+	   if debug_on==True: print(aktuellenachricht)
+	   zeitstempel=timestamp2date(aktuellenachricht[0]['timestamp'])
+	   print('Zeitstempel:'+str(zeitstempel)+' Nachricht:'+aktuellenachricht[1])
+#	   print('Zeitstempel:'+aktuellenachricht[0]['timestamp']+' Nachricht:'+aktuellenachricht[1])
 
 
 #	i=0
@@ -51,9 +61,11 @@ class App():
         self.stderr_path = '/dev/tty'
         self.pidfile_path =  '/tmp/smalldaemin.pid'
         self.pidfile_timeout = 5
+        global debug_on
+        debug_on=False
     def run(self):
         while True:
-            print("warte auf Nachricht...")
+            print("Frage weitere Nachrichten in 2 Sekunden ab...")
             readoutloud()
             time.sleep(2)
 

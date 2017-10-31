@@ -12,7 +12,7 @@ import random
 def send2queue( targethost='localhost', targetqueue='mytestqueue'  ):   
 # gethostbyname funktioniert nur mit fqdn-notation. ein einfacher hostnam zu fehlern
         targetip=str(socket.gethostbyname(targethost))
-        print('ziel:' + targetip)
+        print('Zielbroker:' + targetip)
         nachricht=str(random.random())
         conn=stomp.Connection10([(targetip,61613)])
 #        conn=stomp.Connection12([('127.0.0.1',61613)])
@@ -58,12 +58,14 @@ class App():
 
 
     def run(self):
+        i=1
         durchlauf=runs
         while durchlauf>0:
-            print("Ich lebe!")
+            print("Sende zufaellige Nachricht. Iteration:"+str(i))
             send2queue(targethost=zielhost,targetqueue=zielqueue)
-            time.sleep(2)
+            time.sleep(0.3)
             durchlauf=durchlauf-1
+            i=i+1
 	print('Game Over')
         exit()       
  
