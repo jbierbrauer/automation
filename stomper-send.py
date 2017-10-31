@@ -1,4 +1,7 @@
 #!/usr/bin/python
+
+# funktioniert auch in Python3 (da Tabs und Space Indents angepasst wurden. Python2 meckert dort nicht)
+
 import time
 import stomp
 import sys
@@ -11,16 +14,16 @@ import random
 
 def send2queue( targethost='localhost', targetqueue='mytestqueue'  ):   
 # gethostbyname funktioniert nur mit fqdn-notation. ein einfacher hostnam zu fehlern
-        targetip=str(socket.gethostbyname(targethost))
-        print('Zielbroker:' + targetip)
-        nachricht=str(random.random())
-        conn=stomp.Connection10([(targetip,61613)])
-#        conn=stomp.Connection12([('127.0.0.1',61613)])
+	targetip=str(socket.gethostbyname(targethost))
+	print('Zielbroker:' + targetip)
+	nachricht=str(random.random())
+	conn=stomp.Connection10([(targetip,61613)])
+#	conn=stomp.Connection12([('127.0.0.1',61613)])
 	conn.start()
 	conn.connect()
 #	conn.send(str(targetqueue),'Hello World... ehrm Queue')
 	conn.send(str(targetqueue),nachricht)
-        print ('Nachricht gesendet:'+nachricht)
+	print ('Nachricht gesendet:'+nachricht)
 	conn.disconnect()
 	return
 
@@ -35,8 +38,9 @@ class App():
         # Aaengig von der Anzahl von Argu wird entweder nur der Zielhost oder der Zielhost und die Zielqueue oder der Zielhost, die Zielqueue und die Anzahl der Nachrichten angegeben
         global runs, zielhost,zielqueue
         runs=5  
-        if len(sys.argv)==0: 
-	    runs=5
+        print(sys.argv)
+        if len(sys.argv)==1: 
+            runs=5
             zielqueue='mytestqueue'
             zielhost='localhost'
             print("No guments given")
@@ -51,7 +55,7 @@ class App():
             zielhost=str(sys.argv[1])
             runs=5
         else:
-            zielhost='localhost'
+            zielhost=str(sys.argv[1])
             zielqueue='mytestqueue'
             runs=5
         
@@ -66,7 +70,7 @@ class App():
             time.sleep(0.3)
             durchlauf=durchlauf-1
             i=i+1
-	print('Game Over')
+        print('Game Over')
         exit()       
  
 app = App()

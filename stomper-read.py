@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 import time
+import sys
+import socket
 import datetime
 #from javax.jms import Session
 #from org.apache.activemq import ActiveMQConnectionFactory
@@ -13,9 +15,10 @@ def timestamp2date(timestamp_in_ms):
 	if debug_on==True: print(datum)
 	return datum
  
-def readoutloud():
+def readoutloud(targethost='localhost'):
+	targetip=str(socket.gethostbyname(targethost))
 #	conn = stomp.Connection12()
-	conn = stomp.Connection12([('127.0.0.1',61613)])
+	conn = stomp.Connection12([(targetip,61613)])
 	listener = TestListener()
 	conn.set_listener('', listener)
 #	conn.set_listener('message', ConnectionListener(conn))
@@ -61,13 +64,16 @@ class App():
         self.stderr_path = '/dev/tty'
         self.pidfile_path =  '/tmp/smalldaemin.pid'
         self.pidfile_timeout = 5
-        global debug_on
+        global debug_on, zielhost
         debug_on=False
+        if len(sys.argv)==2: 
+          zielhost=str(sys.argv[1])
+        print(sys.argv)
     def run(self):
         while True:
             print("Frage weitere Nachrichten in 2 Sekunden ab...")
-            readoutloud()
-            time.sleep(2)
+            readoutloud(zielhost)
+            time.sleep(1)
 
 app = App()
 app.run()
