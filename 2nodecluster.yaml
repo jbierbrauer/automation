@@ -1,0 +1,87 @@
+---
+- hosts: clusternodes
+  vars:
+    cluster_user: hacluster
+    cluster_user_pass: testtest
+    cluster_group: haclient
+    cluster_name: pacemaker
+    cluster_firewall: true
+    cluster_enable_service: true
+    HOST_COUNT: "{{ groups['clusternodes'] | length }}"
+    pacemaker_packages:
+        - fence-agents
+        - pcs
+        - pacemaker
+
+  tasks:
+   - name: Check if cluster consist of at least 2 nodes
+     fail: msg="Cluster must have at least 2 members"
+     when: HOST_COUNT<2
+     run_once: true
+
+   - name: Installing libselinux-python to work with SELinux activated
+     yum: name=libselinux-python state=installed
+
+   - name: Install firewalld for Firewall management
+     yum: name=firewalld state=installed
+
+   - name: Install Pacemaker cluster packages to all nodes
+     yum: name={{ item }} state=installed
+     with_items:
+       - "{{ pacemaker_packages }}"
+
+
+# TODO allow to choose if to use FQDN or just short hostname, defaulting to short hostname
+# WARNING: the 'ansible_fqdn' is resolved from /etc/hosts file! If you change hostname
+# of machine through /etc/hosts the ansible will pick it up and use it!
+   - name: Add hosts to /etc/hosts
+     lineinfile:
+     args:
+       dest: '/etc/hosts'
+       regexp: "{{ hostvars[item]['ansible_default_ipv4']['address'] }} "
+       line: "{{ hostvars[item]['ansible_default_ipv4']['address'] }} {{ hostvars[item]['ansible_fqdn'].split('.')[0] }}"
+     with_items: "{{ play_hosts }}"
+
+   - name: Create cluster system group
+     group: name={{ cluster_group }} state=present
+   - name: Create cluster system user
+     user: 
+       name={{ cluster_user }} state=present
+       password={{ cluster_user_pass | password_hash('sha512', ansible_hostname|replace('-','x')|truncate(16)) }}
+       groups={{ cluster_group }} comment="HA Cluster Administrator"
+
+   - name: Enable and start PCSD service
+     service: name=pcsd enabled=yes state=started
+
+   - name: Enable firewalld service, so we can add the exception for HA
+     service: name=firewalld enabled=yes state=started
+
+   - name: Enable 'high-availability' firewalld service
+     firewalld: service=high-availability permanent=true state=enabled immediate=true
+
+   - name: Authorize cluster nodes
+     pcs_auth: node_name={{ hostvars[item]['ansible_fqdn'].split('.')[0] }} username={{ cluster_user }} password={{ cluster_user_pass }}
+     with_items: '{{ play_hosts }}'
+
+   - name: Setup cluster
+     pcs_cluster: node_list="{% for item in play_hosts %}{{ hostvars[item]['ansible_hostname'] }} {% endfor %}" cluster_name="{{ cluster_name }}"
+     run_once: true
+
+   - name: Start cluster services on all nodes
+     service: name={{ item }} state=started
+     with_items:
+      - pacemaker 
+      - corosync
+
+   - name: Enable cluster services on boot
+     service: name={{ item }} enabled=yes
+     when: cluster_enable_service == true
+     with_items:
+       - pacemaker 
+       - corosync
+
+### fencing setup has to be implemented for vmware esx/vcenter vms
+   - name: Setup automatic fence_vmware
+     pcs_resource: name="{{ item.key }}" resource_class='stonith' resource_type="{{ item.value.fence_type }}" options="{{ item.value.fence_options }}"
+     with_dict: "{{ cluster_fence_config|default({}) }}"
+     run_once: true
