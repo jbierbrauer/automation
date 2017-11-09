@@ -18,10 +18,38 @@ except ImportError:
 
 global debug_me
 global names
+global slow
+global targetip
+
+slow=False
 debug_me=False
+targetip='0.0.0.0'
 names={'127.0.0.1':'localhost'}
 
 ipadresse=re.compile('^[1-9][0-9][0-9]?.[1-2]?[0-9]?[0-9].[1-2]?[0-9]?[0-9]?.[1-2]?[0-9]?[0-9]$')
+
+def arg2globals(slow,debug_me):
+   # umwandeln von den befehlszeilenargumenten in globale variablen
+   # Anzahl der uebergebenen Argumente wird in argcount gespeichert
+   argcount=len(sys.argv)
+   targetip='0.0.0.0'
+   for i in range(0,argcount):
+       print "Ueberpruefe Argument Nr.%s = %s"%(i,sys.argv[i])
+       if (sys.argv[i]=='-d'): 
+          debug_me=True
+          print "Debug on (-d)"
+       if (sys.argv[i]=='-s'): 
+          slow=True
+          print "Slow on (-s)"
+       if (ipadresse.match(sys.argv[i])): 
+          targetip=sys.argv[i]
+          print "Zieladresse gesetzt auf: "+sys.argv[i]
+   if (targetip=='0.0.0.0'):
+       targetip=socket.gethostbyname(socket.gethostname())          
+   print "Targetip: %s, lahm: %s debug? %s"% (targetip, str(slow), str(debug_me))
+   return targetip, slow, debug_me 
+
+
 
 def fancyoutput(ipliste,nogolist):
 #  huebschere Ausgabe der IP-Adressen (anstatt jede einzeln auszugeben)
@@ -74,18 +102,23 @@ def pingclassc(subnet):
 
 def mpingclassc(subnet):
    print "Nutze mping-Modul fuer schnellere Verarbeitung der Pings "
+   if (debug_me==True):
+      print "angegebene Adresse: "+subnet
    tmp=subnet.split('.')
-#  print "tmp ist gleich :"+str(tmp)
+
    subnetaddress=tmp[0]+'.'+tmp[1]+'.'+tmp[2]+'.0'
    subnet_ohne_hostadresse=tmp[0]+'.'+tmp[1]+'.'+tmp[2]+'.'
    targetaddresses=['127.0.0.1',]
    dnstaken=['',]
    names={(subnetaddress):'Subnetz'}
-
+   if (debug_me==True):
+       print "Betrete for-Schleife"
    for ping in range(1,254):
        currentaddress=subnet_ohne_hostadresse+str(ping)
        fqdn='not resolved'
        try: 
+          if (debug_me==True):
+             print "Versuche Aufloesung von ..."+str(currentaddress)
           fqdn, alias, addresslist=socket.gethostbyaddr(currentaddress)
           names.update({currentaddress:fqdn})
           dnstaken.append(currentaddress)
@@ -115,6 +148,15 @@ def mpingclassc(subnet):
 
 #  print names
 
+names={'127.0.0.1':'localhost'}
+targetip='0.0.0.0'
+slow=False
+debug_me=False
+
+targetip, slow, debug_me = arg2globals(slow,debug_me)
+
+print "Debug_mode:"+str(debug_me)
+
 if len(sys.argv) < 1:
        print "keine Argumente angegeben"
        exit()
@@ -122,39 +164,22 @@ if len(sys.argv) < 2 :
        print 'kein Argument angegeben, verwende lokales Subnetz'
        print 'moegliche Argumente sind <IP-Adresse>, z.B. 192.168.3.1 und der Schalter -s zum erzwingen der langsameren Pingmethode'
 #      print sys.argv[0]
-       # finde lokale IP-Adresse, um diese fuer das zu durchsuchende Subnetz zu verwenden
-       localip=socket.gethostbyname(socket.gethostname())          
-       print "lokale Adresse: "+localip
-
-       if ipadresse.match(localip) and use_mping==True:
-           mpingclassc(str(localip))
+       if debug_me:
+          print "targetip: "+targetip
+       if slow==False and use_mping==True:
+          mpingclassc(str(targetip))
        else:
-          pingclassc(str(localip))
+          pingclassc(str(targetip))
        exit()
 
-if len(sys.argv) == 2:
-       if ipadresse.match(str(sys.argv[1])) and use_mping==True:
-          mpingclassc(str(sys.argv[1]))
+if len(sys.argv) > 1:
+       print "Mehr als ein Argument"
+       if slow==False and use_mping==True:
+          print "Weder Slow, noch use_mping=False"
+          mpingclassc(str(targetip))
        else:
-          pingclassc(str(sys.argv[1]))
+          pingclassc(str(targetip))
           exit()
 #      print 'Argument ist keine IP-Adresse!'
        exit() 
-
-if len(sys.argv) > 3:
-       print 'zu viele Argumente. Eines reicht ;)'
-       exit()
-
-if len(sys.argv) > 2:
-       print 'Nur ein Argument (IP-Adresse) benoetigt' 
-       
-       if sys.argv[1]=='-s' and ipadresse.match(str(sys.argv[2])):
-          pingclassc(str(sys.argv[2]))
-          exit() 
-        
-       if sys.argv[2]=='-s' and ipadresse.match(str(sys.argv[1])):
-          pingclassc(str(sys.argv[1]))
-          exit()
-       else:    
-          exit()
 
