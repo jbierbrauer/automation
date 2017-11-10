@@ -33,8 +33,9 @@ def arg2globals(slow,debug_me):
    # Anzahl der uebergebenen Argumente wird in argcount gespeichert
    argcount=len(sys.argv)
    targetip='0.0.0.0'
-   for i in range(0,argcount):
-       print "Ueberpruefe Argument Nr.%s = %s"%(i,sys.argv[i])
+   for i in range(1,argcount):
+       if debug_me:
+          print "Ueberpruefe Argument Nr.%s = %s"%(i,sys.argv[i])
        if (sys.argv[i]=='-d'): 
           debug_me=True
           print "Debug on (-d)"
@@ -46,19 +47,20 @@ def arg2globals(slow,debug_me):
           print "Zieladresse gesetzt auf: "+sys.argv[i]
    if (targetip=='0.0.0.0'):
        targetip=socket.gethostbyname(socket.gethostname())          
-   print "Targetip: %s, lahm: %s debug? %s"% (targetip, str(slow), str(debug_me))
+   if debug_me:
+      print "Targetip: %s, lahm: %s debug? %s"% (targetip, str(slow), str(debug_me))
    return targetip, slow, debug_me 
 
 
 
-def fancyoutput(ipliste,nogolist):
+def fancyoutput(ipliste,nogolist,namensliste, debug_me):
 #  huebschere Ausgabe der IP-Adressen (anstatt jede einzeln auszugeben)
    ipcount=len(ipliste) 
    if (debug_me): print "Im DNS vermerkte Adressen:"+str(nogolist)
-   print 'Anzahl freie Adressen:'+str(ipcount)
+   print 'Anzahl nicht auf Ping antwortende Adressen:'+str(ipcount)
    for i in range(0,ipcount):
        if ipliste[i] in nogolist:
-                 print "Nr."+str((i+1))+" => "+ipliste[i]+" (im DNS jedoch vergeben )"
+                 print "Nr."+str((i+1))+" => "+ipliste[i]+" (im DNS jedoch an "+str(namensliste[ipliste[i]])+" vergeben )"
 
        else:
                  print "Nr."+str((i+1))+" => "+ipliste[i]
@@ -100,7 +102,7 @@ def pingclassc(subnet):
 
 # pingclassc ends here
 
-def mpingclassc(subnet):
+def mpingclassc(subnet, debug_me):
    print "Nutze mping-Modul fuer schnellere Verarbeitung der Pings "
    if (debug_me==True):
       print "angegebene Adresse: "+subnet
@@ -133,7 +135,8 @@ def mpingclassc(subnet):
        
    if (debug_me):
        print "Inhalt von targetaddresses:"
-       print targetaddresses    
+       print targetaddresses
+       print "DNS-Tabelle names: "+str(names)    
    pings=MultiPing(targetaddresses)
    pings.send()
    time.sleep(2)   
@@ -142,7 +145,7 @@ def mpingclassc(subnet):
        for addr, rtt in responses.items():
           print "%s antwortete in %f sekunden" % (addr,rtt)
    if no_responses:
-          fancyoutput(no_responses,dnstaken)
+          fancyoutput(no_responses,dnstaken,names,debug_me)
           if (debug_me):
              print "Diese Adressen antworten nicht auf Ping: %s" % ", ".join(no_responses)
 
@@ -155,11 +158,9 @@ debug_me=False
 
 targetip, slow, debug_me = arg2globals(slow,debug_me)
 
-print "Debug_mode:"+str(debug_me)
+if debug_me:
+   print "Debug_mode:"+str(debug_me)
 
-if len(sys.argv) < 1:
-       print "keine Argumente angegeben"
-       exit()
 if len(sys.argv) < 2 :
        print 'kein Argument angegeben, verwende lokales Subnetz'
        print 'moegliche Argumente sind <IP-Adresse>, z.B. 192.168.3.1 und der Schalter -s zum erzwingen der langsameren Pingmethode'
@@ -167,16 +168,16 @@ if len(sys.argv) < 2 :
        if debug_me:
           print "targetip: "+targetip
        if slow==False and use_mping==True:
-          mpingclassc(str(targetip))
+          mpingclassc(str(targetip), debug_,e)
        else:
           pingclassc(str(targetip))
        exit()
 
 if len(sys.argv) > 1:
-       print "Mehr als ein Argument"
+       if debug_me: print "Mehr als ein Argument"
        if slow==False and use_mping==True:
-          print "Weder Slow, noch use_mping=False"
-          mpingclassc(str(targetip))
+          if debug_me: print "Weder Slow, noch use_mping=False"
+          mpingclassc(str(targetip), debug_me)
        else:
           pingclassc(str(targetip))
           exit()
