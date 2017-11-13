@@ -1,4 +1,6 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 
 import subprocess
 import sys
@@ -39,12 +41,25 @@ def arg2globals(slow,debug_me):
        if (sys.argv[i]=='-d'): 
           debug_me=True
           print "Debug on (-d)"
-       if (sys.argv[i]=='-s'): 
+       if (sys.argv[i]=='-s' or sys.argv[i]=='--slow'): 
           slow=True
           print "Slow on (-s)"
        if (ipadresse.match(sys.argv[i])): 
           targetip=sys.argv[i]
           print "Zieladresse gesetzt auf: "+sys.argv[i]
+       if (sys.argv[i]=='-h' or sys.argv[i]=='--help'):
+          print "Parameter --help verwendet"
+          #print "Dieser Befehl benötigt das Python multiping-Modul zur korrekten Ausführung"
+          print "Dieser Befehl listet die nicht auf Ping antwortenden Adressen eines Class-C (24 Bit) Subnetzes."
+          print "Ist das Python-Modul multiping installiert, so erfolgt zusätzlich eine Abfrage des DNS-Servers, um im DNS vermerkte Adressen gesondert zu markieren"
+          print "Syntax:"
+          print "   mr_pingiun.py [parameter] [zieladresse]"
+          print "------------------------------------------ "
+          print "Mögliche Parameter:"
+          print "zieladresse im Format einer IPv4-Adresse, z.B. 192.168.3.10"
+          print "-d                 zeigt weitere Debuginformationen während der Ausführung an"
+          print "-s oder --slow     nutzt den langsameren Modus ohne multiping-Modul (Ausgabe weniger schön)"
+          print "-h oder --help     zeigt diese Hilfe an"
    if (targetip=='0.0.0.0'):
        targetip=socket.gethostbyname(socket.gethostname())          
    if debug_me:
@@ -69,10 +84,11 @@ def fancyoutput(ipliste,nogolist,namensliste, debug_me):
 
 
 
-def pingclassc(subnet):
-   print "Nutze alte langsamere Methode fuer Pings, da multiping-Modul nicht installiert ist"
+def pingclassc(subnet,debug_me):
+   if (debug_me):
+       print "Nutze alte langsamere Methode fuer Pings, da multiping-Modul nicht installiert ist"
+       print "tmp ist gleich :"+str(tmp)
    tmp=subnet.split('.')
-   print "tmp ist gleich :"+str(tmp)
    subnetaddress=tmp[0]+'.'+tmp[1]+'.'+tmp[2]+'.0'
    subnet_ohne_hostadresse=tmp[0]+'.'+tmp[1]+'.'+tmp[2]+'.'
 
@@ -103,8 +119,8 @@ def pingclassc(subnet):
 # pingclassc ends here
 
 def mpingclassc(subnet, debug_me):
-   print "Nutze mping-Modul fuer schnellere Verarbeitung der Pings "
    if (debug_me==True):
+      print "Nutze mping-Modul fuer schnellere Verarbeitung der Pings "
       print "angegebene Adresse: "+subnet
    tmp=subnet.split('.')
 
@@ -168,9 +184,9 @@ if len(sys.argv) < 2 :
        if debug_me:
           print "targetip: "+targetip
        if slow==False and use_mping==True:
-          mpingclassc(str(targetip), debug_,e)
+          mpingclassc(str(targetip), debug_me)
        else:
-          pingclassc(str(targetip))
+          pingclassc(str(targetip), debug_me)
        exit()
 
 if len(sys.argv) > 1:
@@ -179,7 +195,7 @@ if len(sys.argv) > 1:
           if debug_me: print "Weder Slow, noch use_mping=False"
           mpingclassc(str(targetip), debug_me)
        else:
-          pingclassc(str(targetip))
+          pingclassc(str(targetip), debug_me)
           exit()
 #      print 'Argument ist keine IP-Adresse!'
        exit() 
