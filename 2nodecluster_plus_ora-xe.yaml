@@ -1,0 +1,142 @@
+---
+- hosts: clusternodes
+  vars:
+    cluster_user: hacluster
+    cluster_user_pass: testtest
+    cluster_group: haclient
+    cluster_name: pacemaker
+    cluster_firewall: true
+    cluster_enable_service: true
+    HOST_COUNT: "{{ groups['clusternodes'] | length }}"
+    pacemaker_packages:
+        - fence-agents
+        - pcs
+        - pacemaker
+    glusterfs_packages:
+        - glusterfs
+        - glusterfs-cli
+        - glusterfs-fuse
+        - centos-release-gluster312
+
+  tasks:
+   - name: Check if cluster consist of at least 2 nodes
+     fail: msg="Cluster must have at least 2 members"
+     when: HOST_COUNT<2
+     run_once: true
+
+   - name: Installing libselinux-python to work with SELinux activated
+     yum: name=libselinux-python state=installed
+
+   - name: Install firewalld for Firewall management
+     yum: name=firewalld state=installed
+
+   - name: Install Pacemaker cluster packages to all nodes
+     yum: name={{ item }} state=installed
+     with_items:
+       - "{{ pacemaker_packages }}"
+
+   - name: Add hosts to /etc/hosts
+     lineinfile:
+     args:
+       dest: '/etc/hosts'
+       regexp: "{{ hostvars[item]['ansible_default_ipv4']['address'] }} "
+       line: "{{ hostvars[item]['ansible_default_ipv4']['address'] }} {{ hostvars[item]['ansible_fqdn'].split('.')[0] }}"
+     with_items: "{{ play_hosts }}"
+
+   - name: Create cluster system group
+     group: name={{ cluster_group }} state=present
+   - name: Create cluster system user
+     user: 
+       name={{ cluster_user }} state=present
+       password={{ cluster_user_pass | password_hash('sha512', ansible_hostname|replace('-','x')|truncate(16)) }}
+       groups={{ cluster_group }} comment="HA Cluster Administrator"
+
+   - name: Enable and start PCSD service
+     service: name=pcsd enabled=yes state=started
+
+   - name: Enable firewalld service, so we can add the exception for HA
+     service: name=firewalld enabled=yes state=started
+
+   - name: Enable 'high-availability' firewalld service
+     firewalld: service=high-availability permanent=true state=enabled immediate=true
+
+   - name: Authorize cluster nodes
+     pcs_auth: node_name={{ hostvars[item]['ansible_fqdn'].split('.')[0] }} username={{ cluster_user }} password={{ cluster_user_pass }}
+     with_items: '{{ play_hosts }}'
+
+   - name: Setup cluster
+     pcs_cluster: node_list="{% for item in play_hosts %}{{ hostvars[item]['ansible_hostname'] }} {% endfor %}" cluster_name="{{ cluster_name }}"
+     run_once: true
+   - name: Start cluster services on all nodes
+     service: name={{ item }} state=started
+     with_items:
+      - pacemaker 
+      - corosync
+
+   - name: Enable cluster services on boot
+     service: name={{ item }} enabled=yes
+     when: cluster_enable_service == true
+     with_items:
+       - pacemaker 
+       - corosync
+   - name: Oracle-Installationsdatei kopieren
+     copy: src=/root/oracle-xe.rpm dest=/root/oracle-xe.rpm
+
+   - name: Antwortdatei für Oracle-Installation kopieren
+     copy: src=/root/unattended.rsp dest=/root/unattended.rsp
+
+   - name: Benutzer oracle erstellen
+     user: name=oracle
+   - name: Benutzergruppe orainstall erstellen
+     group: name=orainstall
+   - name: Benutzergruppe oper erstellen
+     group: name=oper   
+   - name: Benutzergruppe dba erstellen
+     group: name=dba
+   - name: GlusterFS Pakete installieren
+     yum: pkg={{item}} state=installed
+     with_items:
+      - "{{ glusterfs_packages }}"
+   - name: sdb sicherheitshalber unmounten
+     shell: umount /dev/sdb
+   - name: Brick auf /dev/sdb fuer Glusterfs bereitstellen
+     parted: device=/dev/sdb number=1 state=present
+   - name: Partition mit XFS-Formatieren
+     filesystem: fstype=xfs dev=/dev/sdb
+   - name: Mountpoint fuer internen Zugriff erstellen
+     file: path=/nodirectwritedata/brick1 state=directory     
+   - name: Mountpoint in fstab einbinden
+     shell: echo /dev/sdb /nodirectwritedata/brick1 xfs defaults 1 2 >> /etc/fstab
+   - name: Volumes in fstab mounten
+     shell: mount -a
+   - name: Verzeichnis fuer Glustervolume in Brickordner erstellen
+     file: path=/nodirectwritedata/brick1/oravol01 state=directory     
+   - name: glusterfs-Volume fuer die zwei Nodes erstellen
+     file: path=/nodirectwritedata/brick1/oravol01 state=directory     
+   - name: Glusterfs-Server-Paket installieren
+     yum: pkg=glusterfs-server state=installed
+   - name: sicherstellen, dass Glusterfs-Dienste laufen
+     service: name=glusterd enabled=yes state=started
+   - name: Gluster Peers gegenseitig bekannt machen
+     shell: gluster peer probe {{ item }}
+     with_items: '{{ play_hosts }}'
+   - name: Glustervolume oravol01 erstellen
+     gluster_volume: state=present name=oravol01 bricks=/nodirectwritedata/brick1/oravol01 replicas=2 cluster="{{ item }}"
+     run_once: true
+     with_items: '{{ play_hosts }}'
+   - name: start gluster volume
+     gluster_volume: state=started name=oravol01
+   - name: Ordner für Oracle-Mountpoint erstellen
+     file: path=/oracle state=directory     
+   - name: Glusterfs-Mountpoint in Fstab hinzufügen
+     shell: echo 'localhost:/oravol01 /oracle glusterfs defaults,_netdev 0 0' >> /etc/fstab
+   - name: FStab Eintraege mounten
+     shell: mount -a
+   - name: Installieren von Oracle nach /oracle
+     shell: /etc/init.d/oracle-xe configure responseFile=/root/unattende.rsp
+
+
+
+
+
+
