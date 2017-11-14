@@ -59,7 +59,8 @@
 
    - name: Enable 'high-availability' firewalld service
      firewalld: service=high-availability permanent=true state=enabled immediate=true
-
+   - name: Disable Firewalld Service
+     service: name=firewalld enabled=no state=stopped
    - name: Authorize cluster nodes
      pcs_auth: node_name={{ hostvars[item]['ansible_fqdn'].split('.')[0] }} username={{ cluster_user }} password={{ cluster_user_pass }}
      with_items: '{{ play_hosts }}'
@@ -93,12 +94,15 @@
      group: name=oper   
    - name: Benutzergruppe dba erstellen
      group: name=dba
+   - name: Oracle-xe mit yum installieren
+     yum: name=/root/oracle-xe.rpm state=present
    - name: GlusterFS Pakete installieren
      yum: pkg={{item}} state=installed
      with_items:
       - "{{ glusterfs_packages }}"
    - name: sdb sicherheitshalber unmounten
      shell: umount /dev/sdb
+     ignore_errors: yes
    - name: Brick auf /dev/sdb fuer Glusterfs bereitstellen
      parted: device=/dev/sdb number=1 state=present
    - name: Partition mit XFS-Formatieren
@@ -109,6 +113,7 @@
      shell: echo /dev/sdb /nodirectwritedata/brick1 xfs defaults 1 2 >> /etc/fstab
    - name: Volumes in fstab mounten
      shell: mount -a
+     ignore_errors: yes
    - name: Verzeichnis fuer Glustervolume in Brickordner erstellen
      file: path=/nodirectwritedata/brick1/oravol01 state=directory     
    - name: glusterfs-Volume fuer die zwei Nodes erstellen
@@ -121,9 +126,8 @@
      shell: gluster peer probe {{ item }}
      with_items: '{{ play_hosts }}'
    - name: Glustervolume oravol01 erstellen
-     gluster_volume: state=present name=oravol01 bricks=/nodirectwritedata/brick1/oravol01 replicas=2 cluster="{{ item }}"
+     gluster_volume: state=present name=oravol01 bricks=/nodirectwritedata/brick1/oravol01 replicas=2 cluster={{ groups.clusternodes[0] }},{{ groups.clusternodes[1] }}
      run_once: true
-     with_items: '{{ play_hosts }}'
    - name: start gluster volume
      gluster_volume: state=started name=oravol01
    - name: Ordner für Oracle-Mountpoint erstellen
@@ -133,7 +137,7 @@
    - name: FStab Eintraege mounten
      shell: mount -a
    - name: Installieren von Oracle nach /oracle
-     shell: /etc/init.d/oracle-xe configure responseFile=/root/unattende.rsp
+     shell: /etc/init.d/oracle-xe configure responseFile=/root/unattended.rsp
 
 
 
