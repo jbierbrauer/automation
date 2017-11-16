@@ -1,0 +1,33 @@
+---
+- hosts: siebelnodes
+
+  tasks:
+  - name: Sicherung des alten Home-Verzeichnis
+    shell: tar -cf /home/siebeluser.tar /opt/siebel/home/siebel
+  - name: UID von Siebelbenutzer mitschreiben 
+    getent: 
+       database: passwd 
+       key: 'siebel' 
+       split: ':'
+
+  - name: Rueckgabe von getent ausgeben
+    debug: msg='Inhalt "{{getent_passwd['siebel'][1]}}"'
+  - debug: var=getent_passwd
+  - name: Loeschen des Siebel-Benutzers
+    user: name=siebel state=absent
+  - name: Sicherstellen, dass Gruppe siebel existiert
+    group: name=siebel state=present
+  - name: Erstellen des Siebel-Benutzers
+    user:
+       name: siebel
+       shell: /bin/bash
+       createhome: yes
+       group: users
+       home: /opt/siebel/home/siebel
+       groups: dialout,video,dba,siebel,users
+       append: yes
+       comment: 'Siebel'
+       uid: "{{getent_passwd['siebel'][1]}}"
+  - name: Entpacken des Home-Backup
+    shell: tar -xvf /home/siebeluser.tar
+
