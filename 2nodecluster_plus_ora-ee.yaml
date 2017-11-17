@@ -7,6 +7,8 @@
     cluster_name: pacemaker
     cluster_firewall: true
     cluster_enable_service: true
+    oracleuserid: 1000
+    dbausergid: 1003
     HOST_COUNT: "{{ groups['clusternodes'] | length }}"
     pacemaker_packages:
         - fence-agents
@@ -29,7 +31,12 @@
 
    - name: Install firewalld for Firewall management
      yum: name=firewalld state=installed
-
+   - name: SELinux deaktivieren via setenforce
+     shell: setenforce 0
+   - name: Installieren von ksh und libaio-devel fuer Oracle
+     yum: name=ksh state=installed
+   - name: Installation von libaio-devel fuer Oracle
+     yum: name=libaio-devel state=installed
    - name: Install Pacemaker cluster packages to all nodes
      yum: name={{ item }} state=installed
      with_items:
@@ -82,20 +89,18 @@
        - corosync
    - name: Oracle-Installationsdatei mounten
      mount: fstype=nfs name=/install src='192.168.192.128:/root/database/' state=mounted
-
    - name: Antwortdatei für Oracle-Installation kopieren
-     copy: src=/root/database/response/unattended.rsp dest=/root/unattended.rsp
+     copy: src=/root/database/onlydbsw.rsp dest=/root/unattended.rsp
    - name: Installationsbenutzer orainstall erstellen
      user: name=orainstall group=root state=present
-
    - name: Benutzer oracle erstellen
-     user: name=oracle
+     user: name=oracle uid={{ oracleuserid }}
    - name: Benutzergruppe orainstall erstellen
      group: name=orainstall
    - name: Benutzergruppe oper erstellen
      group: name=oper   
    - name: Benutzergruppe dba erstellen
-     group: name=dba
+     group: name=dba gid={{ dbausergid }}
    - name: GlusterFS Pakete installieren
      yum: pkg={{item}} state=installed
      with_items:
@@ -130,16 +135,31 @@
      run_once: true
    - name: start gluster volume
      gluster_volume: state=started name=oravol01
+   - name: Warten auf Mr Godot
+     pause: seconds=10
+   - name: gluster volume status ueberpruefen
+     shell: gluster volume status oravol01
+   - name: Besitzer des Glustervolumes auf oracle setzen
+     shell: gluster volume set oravol01 storage.owner-uid {{ oracleuserid }}
+   - name: Gruppe des Glustervolumes auf dba setzen
+     shell: gluster volume set oravol01 storage.owner-gid {{ dbausergid }}
    - name: Ordner für Oracle-Mountpoint erstellen
-     file: path=/oracle state=directory     
+     file: path=/usr/oracle state=directory group=dba owner=oracle     
    - name: Glusterfs-Mountpoint in Fstab hinzufügen
-     shell: echo 'localhost:/oravol01 /oracle glusterfs defaults,_netdev 0 0' >> /etc/fstab
+     shell: echo 'localhost:/oravol01 /usr/oracle glusterfs defaults,_netdev 0 0' >> /etc/fstab
    - name: FStab Eintraege mounten
      shell: mount -a
+   - name: oraInventory in /usr/oracle erstellen
+     file: path=/usr/oracle/oraInventory state=directory group=dba owner=oracle
+
+   - name: Produkt-Verzeichnis fuer Oracle erstellen
+     file: path=/usr/oracle/product/12.2.0/dbhome_1 state=directory group=dba owner=oracle
+
+
    - name: Installieren von Oracle nach /oracle
-     shell: /install/runInstaller -silent -responseFile=/install/unattended.rsp
+     shell: /install/runInstaller -silent -ignoreSysPrereqs -ignorePrereq -waitForCompletion responseFile=/install/onlydbsw.rsp
      become: yes
-     become_user: orainstall
+     become_user: oracle
      become_method: su
 
    - name: orainstall-Benutzer deaktivieren
