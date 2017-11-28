@@ -120,12 +120,10 @@ while test -n "$1"; do
             ;;
         -c)
             thresh_crit=$2
-            echo "arg2=$2"
             if [[ `expr match "$thresh_crit" '\([0-9]\+\)'` != $thresh_crit ]] || [ -z $thresh_crit ]; then
                 echo "Critical value must be a number greater than zero (-c)"
                 exit $STATE_UNKNOWN
             fi
-            echo "Crit: ${thresh_crit}"
             shift
             ;;
         *)
@@ -137,24 +135,24 @@ while test -n "$1"; do
     shift
 done
 
-echo "Warn: ${thresh_warn}"
-echo "Crit: ${thresh_crit}"
+#echo "Warn: ${thresh_warn}"
+#echo "Crit: ${thresh_crit}"
 
 
 
 i=0
 for vg in `vgs --noheadings --nosuffix --units b --separator " " --options vg_name`; do
-   echo /home/aqdejbi/nagios-plugin/bin/check_vg_free -c ${thresh_crit}% -w ${thresh_warn}% $vg   
+#   echo /home/aqdejbi/nagios-plugin/bin/check_vg_free -c ${thresh_crit}% -w ${thresh_warn}% $vg   
    /home/aqdejbi/nagios-plugin/bin/check_vg_free -c ${thresh_crit}% -w ${thresh_warn}% $vg
    erg[i]=$?
    vgname[i]=$vg
-   echo ${erg[i]}
+#   echo ${erg[i]}
    if [[ "${erg[i]}" -eq "2" ]]; then
       critflag=1
-      echo "Kritisch"
+#      echo "Kritisch"
    elif [[ "${erg[i]}" -eq "1" ]]; then
       warnflag=1
-      echo "Warnung"
+#      echo "Warnung"
    fi
    i=$i+1
 done
@@ -163,9 +161,7 @@ vganzahl=${#vgname[@]}
 for ((x=0; x<${vganzahl};x++));
 do
   if [[ ${erg[x]} -gt "0"  ]]; then     
-     echo "${vgname[x]} = ${erg[x]}";
-  
- 
+#     echo "${vgname[x]} = ${erg[x]}";
      curmsg=`vgs --noheadings ${vgname[x]} | awk '{print "="$7 " von "$6" frei. "}' `
      msgs=${msgs}${vgname[x]}${curmsg}
   fi
