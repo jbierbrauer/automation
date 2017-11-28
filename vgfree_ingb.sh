@@ -44,11 +44,11 @@ print_usage() {
     echo "Usage: $PROGNAME [-h|-V] | -w nnn -c nnn"; echo ""
     echo "  -h, --help"; echo "          print the help message and exit"
     echo "  -V, --version"; echo "          print version and exit"
-    echo "  -w nn, --warning=nn"; echo "          warning threshold in percent of space free"
-    echo "  -c nn, --critical=nn"; echo "          critical threshold in percent of space free"
+    echo "  -w nn, --warning=nn"; echo "          warning threshold in GB(=1000MB) of space free"
+    echo "  -c nn, --critical=nn"; echo "          critical threshold in GB(=1000MB) of space free"
     echo "---------------------------------------------"
     echo "Example: $PROGNAME -c 20 -w 30 "
-    echo "Description: Gives a Warning when any of the Volume Groups have less than 30% free Space available and an Alert when any of the Volume Groups has less then 20% of free Space available"
+    echo "Description: Gives a Warning when any of the Volume Groups have less than 30GB free Space available and an Alert when any of the Volume Groups has less then 20GB of free Space available"
 
 
 
@@ -143,7 +143,7 @@ done
 i=0
 for vg in `vgs --noheadings --nosuffix --units b --separator " " --options vg_name`; do
 #   echo /home/aqdejbi/nagios-plugin/bin/check_vg_free -c ${thresh_crit}% -w ${thresh_warn}% $vg   
-   /home/aqdejbi/nagios-plugin/bin/check_vg_free -c ${thresh_crit}% -w ${thresh_warn}% $vg
+   /home/aqdejbi/nagios-plugin/bin/check_vg_free -c ${thresh_crit}000 -w ${thresh_warn}000 $vg
    erg[i]=$?
    vgname[i]=$vg
 #   echo ${erg[i]}
