@@ -21,8 +21,8 @@
 # Example: check_lvm -w 30 -c 20
 #
 # OK                                  (exit code 0)
-# WARNING - vg1/lv0/92%  vg2/lv1/94%  (exit code 1)
-# CRITICAL - vg0/lv0/97%  vg1/lv0/92% (exit code 2)
+# WARNING - vg01=16.4g von 40.0g frei (exit code 1)
+# CRITICAL - vg00=12.0 von 40.0g frei (exit code 2)
 
 
 PROGNAME=`basename $0`
@@ -170,27 +170,6 @@ do
      msgs=${msgs}${vgname[x]}${curmsg}
   fi
 done
-
-
-#   for lv in `lvs --noheadings --nosuffix --units b --separator " " --options lv_name $vg`; do
-#      if [[ `mount | grep $vg | grep $lv` ]]; then
-#        dfout=`df -P --block-size=1 | grep $vg | grep $lv`
-#        outper=`echo "$dfout" | grep --only-matching "[0-9]*%"`
-#        outname="$vg/$lv"
-#        outmount=`echo "$dfout" | awk '{print $6}'`
-#`echo "$dfout" | awk '{ print $1 }'`
-#        outnum=`expr match "$outper" '\([0-9]*\)'`
-#        if [ $thresh_crit ] && [ "$outnum" -ge "$thresh_crit" ]; then
-#           critflag=1
-#           msgs="$msgs$outname/$outper ($outmount)"
-#        elif [ $thresh_warn ] && [ "$outnum" -ge "$thresh_warn" ]; then
-#           warnflag=1
-#           msgs="$msgs$outname/$outper ($outmount)"
-#        fi
-#
-#      fi
-#   done
-#done 
 
 if [ $critflag ]; then
     mesg="CRITICAL -"
