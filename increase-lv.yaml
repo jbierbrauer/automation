@@ -1,0 +1,17 @@
+---
+- hosts: testsystem
+  vars:
+  - schwellwert: 20
+  - volumegroup: vg00
+  - logicalvolume: lvhome
+  tasks:
+  - name: Sicherung des alten Home-Verzeichnis
+    debug: msg="Erweitere Volume {{ logicalvolume }} von VG {{volumegroup}} um 10% des freien Platzes"
+  - name: Erweitern des logischen Volumes, um 30% des freien VG-Speicherplatzes
+    lvol:
+      vg: "{{ volumegroup }}"
+      lv: "{{ logicalvolume }}"
+      size: +10%FREE
+  - name: Dateisystem ebenfalls erweitern via resize2fs
+    command: resize2fs /dev/mapper/{{ volumegroup }}-{{ logicalvolume }}    
+
