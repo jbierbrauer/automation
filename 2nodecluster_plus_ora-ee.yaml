@@ -9,6 +9,8 @@
     cluster_enable_service: true
     oracleuserid: 1000
     dbausergid: 1003
+    oracle_home: /usr/oracle/product/12.2.0.1/db_1
+    oracle_base: /usr/oracle
     HOST_COUNT: "{{ groups['clusternodes'] | length }}"
     pacemaker_packages:
         - fence-agents
@@ -91,16 +93,18 @@
      mount: fstype=nfs name=/install src='192.168.192.128:/root/database/' state=mounted
    - name: Antwortdatei für Oracle-Installation kopieren
      copy: src=/root/database/onlydbsw.rsp dest=/root/unattended.rsp
-   - name: Installationsbenutzer orainstall erstellen
-     user: name=orainstall group=root state=present
-   - name: Benutzer oracle erstellen
-     user: name=oracle uid={{ oracleuserid }}
+   - name: Installationsgruppe oinstall erstellen
+     group: name=oinstall gid=54321 state=present
    - name: Benutzergruppe orainstall erstellen
      group: name=orainstall
    - name: Benutzergruppe oper erstellen
-     group: name=oper   
+     group: name=oper gid=54323  
    - name: Benutzergruppe dba erstellen
-     group: name=dba gid={{ dbausergid }}
+     group: name=dba gid=54322
+   - name: Benutzer oracle erstellen
+     user: name=oracle uid=54321 group=oinstall groups=dba,oper
+   - name: Umgebungsvariablen fuer oracle-Benutzer setzen
+     lineinfile: path=/home/oracle/.bashrc regexp='^EXPORT ORACLE_BASE.*' line='EXPORT ORACLE_BASE=/usr/oracle/'
    - name: GlusterFS Pakete installieren
      yum: pkg={{item}} state=installed
      with_items:
@@ -144,20 +148,20 @@
    - name: Gruppe des Glustervolumes auf dba setzen
      shell: gluster volume set oravol01 storage.owner-gid {{ dbausergid }}
    - name: Ordner für Oracle-Mountpoint erstellen
-     file: path=/usr/oracle state=directory group=dba owner=oracle     
+     file: path=/usr/oracle state=directory group=oinstall owner=oracle     
    - name: Glusterfs-Mountpoint in Fstab hinzufügen
      shell: echo 'localhost:/oravol01 /usr/oracle glusterfs defaults,_netdev 0 0' >> /etc/fstab
    - name: FStab Eintraege mounten
      shell: mount -a
    - name: oraInventory in /usr/oracle erstellen
      file: path=/usr/oracle/oraInventory state=directory group=dba owner=oracle
-
    - name: Produkt-Verzeichnis fuer Oracle erstellen
-     file: path=/usr/oracle/product/12.2.0/dbhome_1 state=directory group=dba owner=oracle
-
+     file: path=/usr/oracle/product/12.2.0.1/dbhome_1 state=directory group=oinstall owner=oracle
+   - name: Berechtigungen for oracle Benutzer und Gruppe setzen
+     file: path=/usr/oracle state=directory recurse=yes group=oinstall owner=oracle
 
    - name: Installieren von Oracle nach /oracle
-     shell: /install/runInstaller -silent -ignoreSysPrereqs -ignorePrereq -waitForCompletion responseFile=/install/onlydbsw.rsp
+     shell: /install/runInstaller -silent -ignoreSysPrereqs -ignorePrereq -waitForCompletion responseFile=/install/onlydbsw.rsp ORACLE_BASE=/usr/oracle ORACLE_HOME=/usr/oracle/product/12.2.0.1/dbhome_1
      become: yes
      become_user: oracle
      become_method: su
