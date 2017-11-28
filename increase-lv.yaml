@@ -9,7 +9,7 @@
     debug: msg="Erweitere Volume {{ logicalvolume }} von VG {{volumegroup}} um 10% des freien Platzes"
   - name: Erweitern des logischen Volumes, um 30% des freien VG-Speicherplatzes
     lvol:
-      vg: "{{ volumegroup }}"
+      vg: "{{ ansible_lvm['lvs'][logicalvolume]['vg'] }}"
       lv: "{{ logicalvolume }}"
       size: +10%FREE
   - name: Dateisystem ebenfalls erweitern via resize2fs
