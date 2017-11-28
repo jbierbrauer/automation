@@ -6,7 +6,7 @@
   tasks:
   - name: Ausgabe der genutzten Volumegruppe und logischen Volumes
     debug: msg="Erweitere Volume {{ logicalvolume }} von VG {{ volumegroup  }} um 10% des freien Platzes"
-  - name: Erweitern des logischen Volumes, um 30% des freien VG-Speicherplatzes
+  - name: Erweitern des logischen Volumes, um 10% des freien VG-Speicherplatzes
     lvol:
       vg: "{{ volumegroup}}"
       lv: "{{ logicalvolume }}"
