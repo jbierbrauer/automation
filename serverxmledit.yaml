@@ -1,0 +1,38 @@
+---
+- hosts: wasserver
+  vars:
+   webservername: testname
+   dmgrprofil: Dmgr01
+   cellname: IBMWASCell01
+   nodename: IBMWASNode01
+   servername: server1
+   value2append: ' -Xint'
+  tasks:
+  - name: Pfad existiert
+    stat: path=/opt/IBM/WebSphere/AppServer/profiles/{{dmgrprofil}}/config/cells/{{cellname}}/nodes/{{nodename}}/servers/{{servername}}
+    register: p
+  - debug:
+       msg: "Path exists and is a directory"
+    when: p.stat.isdir is defined and p.stat.isdir
+  - name: Read jvmArguments of server.xml
+    xml:
+      namespaces: 
+         process="http://www.ibm.com/websphere/appserver/schemas/5.0/process.xmi"
+      path: /opt/IBM/WebSphere/AppServer/profiles/{{dmgrprofil}}/config/cells/{{cellname}}/nodes/{{nodename}}/servers/{{servername}}/server.xml
+      xpath: /process:Server/processDefinitions/jvmEntries[@genericJvmArguments]
+      content: attribute
+      attribute: genericJvmArguments
+    register: xmlresp
+  - name: Print Attribute Value
+    debug:
+      var: xmlresp.matches[0].jvmEntries.genericJvmArguments
+  - name: Eintragen eines Wertes für genericJvmArguments
+    xml:
+      namespaces:
+         process="http://www.ibm.com/websphere/appserver/schemas/5.0/process.xmi"
+      path: /opt/IBM/WebSphere/AppServer/profiles/{{dmgrprofil}}/config/cells/{{cellname}}/nodes/{{nodename}}/servers/{{servername}}/server.xml
+      xpath: /process:Server/processDefinitions/jvmEntries[@genericJvmArguments]
+      attribute: genericJvmArguments
+      value: "{{xmlresp.matches[0].jvmEntries.genericJvmArguments + value2append }}"
+ 
+
