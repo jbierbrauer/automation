@@ -60,7 +60,7 @@ echo "changed ownership of /tmp/certdata to user siebel"
 dzdo mv /root/.keystore /root/.keystore.`date +%s`
 
 
-dzdo su - root "-c ${path2keytool} -genkey -alias siebel -keyalg RSA -keystore /root/.keystore -keysize 4096 -validity 3650 </tmp/certdata"
+dzdo su - root "-c ${path2keytool} -genkey -alias siebel -keyalg RSA -sigalg SHA256withRSA -keystore /root/.keystore -keysize 4096 -validity 3650 </tmp/certdata"
 
 echo "=========created keystore as user siebel==========="
 
