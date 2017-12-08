@@ -85,7 +85,7 @@ dzdo su - root "${tmpcmd}"
 erg=$?
 
 if [[ ${erg} -eq 0  ]]; then
-   dzdo cp -f ${tmpjarfile} ${path2jarfile}
+   dzdo cp ${tmpjarfile} ${path2jarfile}
    dzdo chown siebel:users ${path2jarfile}
    echo "Copied signed file to original location"
 else
