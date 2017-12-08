@@ -73,6 +73,8 @@ dzdo mkdir -p /root/signing
 dzdo cp ${path2jarfile} /root/signing/SiebelToolbar.jar
 echo "===============file was copied to /root/signing/==============="
 tempjarfile=/root/signing/SiebelToolbar.jar
+dzdo cp ${path2jarfile} /root/SiebelToolbar.bak`date +%s` 
+
 mycommand="${path2jarsigner} -storepass ${pass} -keypass ${pass} ${tempjarfile} siebel"
 
 # echo "executing... command ${mycommand}"
@@ -80,6 +82,14 @@ mycommand="${path2jarsigner} -storepass ${pass} -keypass ${pass} ${tempjarfile} 
 tmpcmd="-c ${mycommand}"
 echo $tmpcmd
 dzdo su - root "${tmpcmd}"
+erg=$?
 
+if [[ ${erg} -eq 0  ]]; then
+   dzdo cp -f ${tmpjarfile} ${path2jarfile}
+   dzdo chown siebel:users ${path2jarfile}
+   echo "Copied signed file to original location"
+else
+   echo "Signing not successful" 
+fi
 
-echo "----------executed command ${mycommand} with RC $?-----------"
+echo "----------executed command ${mycommand} with RC ${erg}-----------"
