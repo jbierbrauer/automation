@@ -64,7 +64,12 @@ dzdo su - root "-c ${path2keytool} -genkey -alias siebel -keyalg RSA -sigalg SHA
 
 echo "=========created keystore as user siebel==========="
 
+dzdo su - root "-c ${path2keytool} -export -v -keystore /root/.keystore -storepass ${pass} -alias siebel -file ~/public.cer
 
+echo "=========exported public key as public.cer to /root/====="
+
+
+echo "Keystore List Output:"
 dzdo ${path2keytool} -list -v -storepass ${pass} -keypass ${pass}
 
 echo "===============creating Copy of SiebelToolbar.jar=============="
@@ -74,6 +79,8 @@ dzdo cp ${path2jarfile} /root/signing/SiebelToolbar.jar
 echo "===============file was copied to /root/signing/==============="
 tempjarfile=/root/signing/SiebelToolbar.jar
 dzdo cp ${path2jarfile} /root/SiebelToolbar.bak`date +%s` 
+
+dzdo zip -d ${tempjarfile} 'META-INF/*.SF' 'META-INF/*.RSA'
 
 mycommand="${path2jarsigner} -storepass ${pass} -keypass ${pass} ${tempjarfile} siebel"
 
